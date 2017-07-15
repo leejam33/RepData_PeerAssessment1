@@ -8,9 +8,13 @@ output:
 
 ## Loading and preprocessing the data
 
-
+test
+Test2
 
 ## What is mean total number of steps taken per day?
+```{r, echo=TRUE}
+head(mtcars)
+```
 
 
 
