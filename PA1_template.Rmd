@@ -8,22 +8,142 @@ output:
 
 ## Loading and preprocessing the data
 
-test
-Test2
+### 1. Loading the data and check what the status
+
+
+```{r, echo=TRUE}
+activity <- read.csv('activity.csv')
+head(activity)
+```
+
+```{r}
+str(activity)
+```
+
+
+### 2. Loading the dplyr package 
+```{r,message=FALSE}
+library(dplyr)
+```
+
+### 3. Process/transform the data (if necessary) into a format suitable for your analysis
+```{r}
+dailysteptotal <-activity %>% group_by(date) %>% summarise(steps = sum(steps))
+
+```
+
+
 
 ## What is mean total number of steps taken per day?
+
+### 1. Calculate the total number of steps taken per day
 ```{r, echo=TRUE}
-head(mtcars)
+dailysteptotal <-activity %>% group_by(date) %>% summarise(steps = sum(steps))
+head(dailysteptotal)
 ```
+
+### 2. Make a histogram using base plotting system
+```{r}
+hist(dailysteptotal$steps,breaks = seq(0,25000,by = 2500),ylim = range(0,20,5),main = "Histogrm of Total Number of Steps Taken Each Day",xlab ="Total steps per day", col = "red")
+```
+
+### 3. Calculate and report the mean and median of the total number of steps taken per day
+```{r}
+meanD <- mean(dailysteptotal$steps,na.rm = T)
+medianD <-median(dailysteptotal$steps,na.rm = T)
+meanD
+medianD
+```
+
+### Answer: The mean and median of the total number of steps taken per day is `r meanD` and `r medianD`.
 
 
 
 ## What is the average daily activity pattern?
 
+### 1.Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r}
+dailystepavg <-activity %>% group_by(interval) %>% summarise(steps = mean(steps,na.rm = T))
+plot(x=dailystepavg$interval,y=dailystepavg$steps,type = "l",col="red",xlab = "Interval", ylab = "Steps")
+```
 
+### 2. Calculate Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps
+```{r}
+maxintervalstep <- subset(dailystepavg, steps == max(dailystepavg$steps))
+a <- maxintervalstep$interval
+```
+
+### Answer: Interval at `r a` minutes contains the maximum number of steps.
 
 ## Imputing missing values
+
+### 1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+```{r}
+missing <-sum(is.na(activity))
+
+```
+
+The total number of missing values is `r missing`.
+
+### 2. Devise a strategy for filling in all of the missing values in the dataset. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+```{r}
+newact <- activity
+for (i in 1:nrow(newact)) {
+    if (is.na(newact$steps[i])) {
+        newact$steps[i] <-  dailystepavg[which(newact$interval[i] == dailystepavg$interval), ]$steps
+    }
+}
+
+head(newact)
+
+sum(is.na(newact))
+```
+
+### 3.Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day.
+
+```{r}
+NewstepT <-newact %>% group_by(date) %>% summarise(steps = sum(steps))
+
+hist(NewstepT$steps,breaks = seq(0,25000,by = 2500),ylim = range(0,20,5),main = "Histogrm of Total Number of Steps Taken Each Day",xlab ="Total steps per day", col = "red")
+```
+
+```{r}
+newmeanD <- mean(NewstepT$steps)
+newmedianD <- median(NewstepT$steps)
+
+newmeanD
+newmedianD
+```
+
+### These formulas gives a mean and median of `r newmeanD` and `r newmedianD` respectively. The mean number is same but the median has a little change. Overall, there is no big impact on the analysis of data.
 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+### 1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+```{r}
+newact$date <-as.Date(newact$date,"%Y-%m-%d")
+newact$weekday <-weekdays(newact$date)
+newact$dayType <- ifelse(newact$weekday %in% c("Saturday","Sunday"), "weekends","weekdays")
+head(newact)
+
+```
+
+### 2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+```{r}
+newstepavg <- aggregate(steps ~ interval + dayType, data=newact, mean)
+
+head(newstepavg)
+```
+
+```{r}
+library(lattice)
+
+xyplot(steps ~interval | dayType, newstepavg,type = "l",layout = c(1,2),xlab="Interval", ylab = "Number of steps")
+
+```
+
+
